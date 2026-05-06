@@ -4,8 +4,6 @@
 volatile int32_t bufferSample[1000]={0};     //the ring buffer to store the (squared) value converted by ADC
 volatile int32_t sampleIndex=0;     //show at which position in the ring buffer should the current value be stored
 volatile int32_t movingAverageOutput = 0;      //the calculated moving average result
-
-// Eigene Variablen für die Signalverarbeitung
 volatile int32_t runningSum = 0;           // Speichert die fortlaufende Summe der letzten 1000 Werte
 volatile int64_t dcFilterSum = 67108864LL; // Langsamer Tiefpassfilter für Auto-Kalibrierung des DC-Offsets
 
@@ -30,8 +28,7 @@ void ADC12_0_INST_IRQHandler(void)  //DO NOT CHANGE THE EXISTING PART OF CODE IN
             int32_t rawADC = DL_ADC12_getMemResult(ADC12_0_INST, DL_ADC12_MEM_IDX_0);
 
             // 2. AUTO-KALIBRIERUNG (DC-Offset entfernen)
-            // Handys geben bei Stille eine konstante Gleichspannung aus. Ein langsamer 
-            // Tiefpassfilter misst diese Spannung. Wir ziehen sie vom Signal ab, sodass Stille exakt 0 wird.
+            // Tiefpassfilterung des Klinkenrauschens
             dcFilterSum = dcFilterSum - (dcFilterSum / 32768) + rawADC;
             int32_t currentDC = (int32_t)(dcFilterSum / 32768);
             int32_t acSignal = rawADC - currentDC;
@@ -40,16 +37,14 @@ void ADC12_0_INST_IRQHandler(void)  //DO NOT CHANGE THE EXISTING PART OF CODE IN
             int32_t scaled = acSignal / 16;  // Herunterskalieren, um ein Überlaufen der 32-Bit Summe zu verhindern
             int32_t squaredValue = scaled * scaled; // Quadrieren berechnet die Signalenergie
 
-            // -------------------------------------------------------------------------
             // 4. RINGPUFFER & INKREMENTELLER MOVING AVERAGE (Gleitender Mittelwert)
             // Anstatt in jedem Schritt 1000 Werte per Schleife neu zu addieren (was viel 
             // Rechenzeit kostet), passen wir nur die Differenz an.
-            // -------------------------------------------------------------------------
-            
+                        
             // a) Subtraktion: Ziehe den ältesten quadrierten Wert, der jetzt aus dem "Fenster" fällt, von der Gesamtsumme ab.
             runningSum -= bufferSample[sampleIndex];
             
-            // b) Addition: Addiere den brandneuen quadrierten Wert zur Gesamtsumme.
+            // b) Addition: Addiere den neuen quadrierten Wert zur Gesamtsumme.
             runningSum += squaredValue;
             
             // c) Speichern: Überschreibe den alten Wert im Array mit dem neuen Wert.
