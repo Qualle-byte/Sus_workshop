@@ -93,7 +93,7 @@ void ADC12_0_INST_IRQHandler(void)  //DO NOT CHANGE THE EXISTING PART OF CODE IN
             else if (movingAverageOutput > 15)
                 ledValue = GPIO_GRP_0_PIN_0_PIN; // 1 LED 
             else
-                ledValue = 0x000; // 0 LEDs (Absolut dunkle Stille)
+                ledValue = 0x000; // 0 LEDs 
 
             DL_GPIO_writePinsVal(GPIO_GRP_0_PORT, ledMask, ledValue);
 
